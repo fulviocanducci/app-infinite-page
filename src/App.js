@@ -1,24 +1,63 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { useInfiniteScroll } from "react-infinite-scroll-hook";
+
+import Card from "./Card";
+import Loading from "./Loading";
+import End from "./End";
+
+import { formatDateTime } from "./Utils";
 
 function App() {
+  const [items, setItems] = useState([]);
+  const [hasNextPage, setHasNextPage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+
+  useEffect(
+    () => {
+      loadItemsAsync();
+    }, // eslint-disable-next-line
+    []
+  );
+
+  async function loadItemsAsync() {
+    try {
+      setLoading(true);
+      setTimeout(async () => {
+        const newPage = page + 1;
+        setPage(newPage);
+        const response = await fetch(
+          `http://localhost:8000/api/peoples/page?page=${newPage}`
+        );
+        const json = await response.json();
+        setItems([...items, ...json.data]);
+        setHasNextPage(newPage < json.last_page);
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const infiniteRef = useInfiniteScroll({
+    loading,
+    hasNextPage,
+    onLoadMore: loadItemsAsync,
+    scrollContainer: "window",
+  });
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="container" ref={infiniteRef}>
+      {items.map((item, indice) => (
+        <Card
+          key={indice}
+          id={item.id}
+          name={item.name}
+          created={formatDateTime(item.created_at)}
+        />
+      ))}
+      {loading && <Loading />}
+      {hasNextPage === false && <End />}
     </div>
   );
 }
