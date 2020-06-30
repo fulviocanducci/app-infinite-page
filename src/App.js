@@ -5,7 +5,7 @@ import Card from "./Card";
 import Loading from "./Loading";
 import End from "./End";
 
-import { formatDateTime } from "./Utils";
+import { formatDateTime, url } from "./Utils";
 
 function App() {
   const [items, setItems] = useState([]);
@@ -25,11 +25,9 @@ function App() {
       setLoading(true);
       setTimeout(async () => {
         const newPage = page + 1;
-        setPage(newPage);
-        const response = await fetch(
-          `http://localhost:8000/api/peoples/page?page=${newPage}`
-        );
+        const response = await fetch(url(newPage));
         const json = await response.json();
+        setPage(newPage);
         setItems([...items, ...json.data]);
         setHasNextPage(newPage < json.last_page);
         setLoading(false);
